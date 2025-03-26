@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Ponto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+        h2 {
+            color: #5A2A83;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            background: #5A2A83;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #7D3CCB;
+        }
+        .registro {
+            margin-top: 20px;
+            padding: 10px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registro de Ponto</h2>
+        <button class="button" onclick="registrarPonto('Arthur')">Arthur</button>
+        <button class="button" onclick="registrarPonto('Julia')">Julia</button>
+        <button class="button" onclick="registrarPonto('Elizama')">Elizama</button>
+        <button class="button" onclick="registrarPonto('Bruna')">Bruna</button>
+        <button class="button" onclick="registrarPonto('Gutermberg')">Gutermberg</button>
+        
+        <div class="registro" id="registros">
+            <h3>Registros de <span id="nome-selecionado">Todos</span></h3>
+            <ul id="lista-registros"></ul>
+        </div>
+    </div>
+
+    <script>
+        const registrosUsuarios = {};
+        const etapas = ["Entrada", "Intervalo", "Volta do Intervalo", "Saída"];
+        let usuarioSelecionado = null;
+        const googleScriptURL = "https://script.google.com/macros/s/AKfycbz4MCNdphdJip3qHbm9onFxGnrcd7m9RLEiyCc06eF4XDnYrrB_dkIKxFuGo3Rx4U1c/exec"; // Substitua pela URL do seu Apps Script
+
+        function registrarPonto(nome) {
+            const agora = new Date();
+            const horario = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const data = agora.toLocaleDateString('pt-BR');
+            
+            if (!registrosUsuarios[nome]) {
+                registrosUsuarios[nome] = [];
+            }
+            
+            const etapaAtual = registrosUsuarios[nome].length % 4;
+            const descricaoEtapa = etapas[etapaAtual];
+            
+            const registroTexto = `${nome} - ${descricaoEtapa}: ${horario} em ${data}`;
+            registrosUsuarios[nome].push(registroTexto);
+            
+            // Enviar os dados para o Google Sheets
+            fetch(googleScriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, etapa: descricaoEtapa, horario, data })
+            })
+            .then(response => response.text())
+            .then(data => console.log(data))
+            .catch(error => console.error("Erro ao salvar:", error));
+
+            if (usuarioSelecionado === nome) {
+                atualizarRegistros(nome);
+            }
+        }
+
+        function atualizarRegistros(nome) {
+            const listaRegistros = document.getElementById("lista-registros");
+            listaRegistros.innerHTML = ""; 
+            document.getElementById("nome-selecionado").textContent = nome;
+            
+            if (registrosUsuarios[nome]) {
+                registrosUsuarios[nome].forEach(registro => {
+                    const li = document.createElement("li");
+                    li.textContent = registro;
+                    listaRegistros.appendChild(li);
+                });
+            }
+        }
+
+        document.querySelectorAll(".button").forEach(button => {
+            button.addEventListener("click", function() {
+                usuarioSelecionado = this.textContent;
+                atualizarRegistros(usuarioSelecionado);
+            });
+        });
+    </script>
+</body>
+</html>
